@@ -1,0 +1,12 @@
+# Python Virtual Environment
+venv/
+*.pyc
+__pycache__/
+
+# Dependencies (if you have local wheels or large files)
+# You should generally generate a requirements.txt file instead
+*.whl
+
+# Operating System Files
+.DS_Store
+Thumbs.db
