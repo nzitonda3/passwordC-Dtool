@@ -1,0 +1,3 @@
+didier:$2b$12$pvdgKMEhP9BlpDux.mxlVeL20qBSZl0mSlN08QwGBfktIrVwml4xu
+alice:$2b$12$Gm2VmKpy5AHTU/4duOUYyu9Y1YCfA.PYjq7LAQDY8ILoRxFKJJBoq
+bob:$2b$12$Ag5Qb0bptbuAB/AMdbi8Ue6bFWGnwEMIRRnTwGvgK1Qz04VBTE4gm

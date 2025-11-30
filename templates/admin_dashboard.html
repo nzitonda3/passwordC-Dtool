@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        .section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #0a0a0a;
+            border: 1px solid #00ff88;
+            box-shadow: 0 0 12px #00ff88;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #00ff88;
+        }
+
+        th, td {
+            border: 1px solid #00ff88;
+            padding: 10px;
+        }
+
+        th {
+            background-color: #013220;
+        }
+    </style>
+</head>
+
+<body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-messages">
+      {% for category, msg in messages %}
+        <div class="flash {{ category }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+
+<div class="container">
+    <h1>Security Monitoring Dashboard</h1>
+
+    <a href="/logout" class="btn btn-danger">Logout</a>
+
+
+    <a href="/simulate" style="color:#00ff88;">Simulate Attack</a>
+
+    <!-- Login Logs -->
+    <div class="section">
+        <h2>Login Attempt Logs</h2>
+        <table id="logTable">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>IP</th>
+                    <th>Status</th>
+                    <th>Fingerprint</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- Alerts -->
+    <div class="section">
+        <h2>Detected Alerts</h2>
+        <table id="alertTable">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Details</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- Charts -->
+    <div class="section">
+        <h2>Security Analytics</h2>
+
+        <canvas id="bruteForceChart" width="400" height="200"></canvas>
+        <br><br>
+        <canvas id="stuffingChart" width="400" height="200"></canvas>
+    </div>
+</div>
+<form method="post" action="/run_audit">
+    <button type="submit">Run Password Audit (JTR)</button>
+</form>
+
+<div class="section">
+    <h2>User Risk Scores</h2>
+    <table id="riskTable">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Score</th>
+                <th>Crack Guesses</th>
+                <th>Cracked Password</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+
+
+<script src="/static/js/charts.js"></script>
+
+</body>
+</html>

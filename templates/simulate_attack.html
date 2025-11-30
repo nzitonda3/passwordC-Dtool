@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simulate Attack</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+
+    <style>
+        textarea {
+            width: 90%;
+            height: 80px;
+            background: #000;
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            margin-bottom: 10px;
+        }
+        select {
+            width: 90%;
+            padding: 10px;
+            background: #000;
+            color: #00ff88;
+            border: 1px solid #00ff88;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-messages">
+      {% for category, msg in messages %}
+        <div class="flash {{ category }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="container">
+    <h2>Attack Simulation</h2>
+
+    <form method="post">
+
+        <label>Attack Type:</label><br>
+        <select name="attack_type">
+            <option value="bruteforce">Brute Force</option>
+            <option value="stuffing">Credential Stuffing</option>
+            <option value="spray">Password Spraying</option>
+        </select><br>
+
+        <label>Usernames (comma separated):</label><br>
+        <textarea name="usernames" placeholder="alice,bob,carol"></textarea><br>
+
+        <label>Passwords (comma separated):</label><br>
+        <textarea name="passwords" placeholder="Password123,123456,admin"></textarea><br>
+
+        <label>Source IP:</label><br>
+        <input type="text" name="ip" placeholder="192.168.1.55"><br>
+
+        <label>Attempts per User:</label><br>
+        <input type="number" name="count" value="3"><br>
+
+        <button type="submit">Simulate Attack</button>
+    </form>
+
+    <a href="/admin">Back to Dashboard</a>
+</div>
+</body>
+</html>
