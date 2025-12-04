@@ -3,8 +3,11 @@ venv/
 *.pyc
 __pycache__/
 
-# Dependencies (if you have local wheels or large files)
-# You should generally generate a requirements.txt file instead
+# Local Database Files
+*.db
+*.sqlite
+
+# Dependencies
 *.whl
 
 # Operating System Files

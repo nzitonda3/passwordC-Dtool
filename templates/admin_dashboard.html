@@ -1,120 +1,63 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+{% extends "base.html" %}
+{% block content %}
+<h2>Admin Dashboard</h2>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <style>
-        .section {
-            margin-top: 30px;
-            padding: 20px;
-            background: #0a0a0a;
-            border: 1px solid #00ff88;
-            box-shadow: 0 0 12px #00ff88;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            color: #00ff88;
-        }
-
-        th, td {
-            border: 1px solid #00ff88;
-            padding: 10px;
-        }
-
-        th {
-            background-color: #013220;
-        }
-    </style>
-</head>
-
-<body>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <div class="flash-messages">
-      {% for category, msg in messages %}
-        <div class="flash {{ category }}">{{ msg }}</div>
-      {% endfor %}
-    </div>
-  {% endif %}
-{% endwith %}
-
-
-<div class="container">
-    <h1>Security Monitoring Dashboard</h1>
-
-    <a href="/logout" class="btn btn-danger">Logout</a>
-
-
-    <a href="/simulate" style="color:#00ff88;">Simulate Attack</a>
-
-    <!-- Login Logs -->
-    <div class="section">
-        <h2>Login Attempt Logs</h2>
-        <table id="logTable">
-            <thead>
-                <tr>
-                    <th>User</th>
-                    <th>IP</th>
-                    <th>Status</th>
-                    <th>Fingerprint</th>
-                    <th>Time</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
-
-    <!-- Alerts -->
-    <div class="section">
-        <h2>Detected Alerts</h2>
-        <table id="alertTable">
-            <thead>
-                <tr>
-                    <th>Type</th>
-                    <th>Details</th>
-                    <th>Time</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
-
-    <!-- Charts -->
-    <div class="section">
-        <h2>Security Analytics</h2>
-
-        <canvas id="bruteForceChart" width="400" height="200"></canvas>
-        <br><br>
-        <canvas id="stuffingChart" width="400" height="200"></canvas>
-    </div>
-</div>
-<form method="post" action="/run_audit">
-    <button type="submit">Run Password Audit (JTR)</button>
-</form>
-
-<div class="section">
-    <h2>User Risk Scores</h2>
-    <table id="riskTable">
-        <thead>
-            <tr>
-                <th>User</th>
-                <th>Score</th>
-                <th>Crack Guesses</th>
-                <th>Cracked Password</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+<div class="controls">
+  <form method="post" action="/run_audit" style="display:inline;">
+    <button type="submit">Run Password Audit (John — 30s per user)</button>
+  </form>
+  <a class="btn" href="/simulate">Simulate Attack</a>
+  <a class="btn" href="/check_password">Password Checker</a>
+  <a class="btn" href="/analyze_wordlist">Analyze Wordlist</a>
+  <a class="btn" href="/logout">Logout</a>
 </div>
 
+<section>
+  <h3>PCFG Results (recent)</h3>
+  <table>
+    <thead><tr><th>User</th><th>PCFG guesses</th><th>Pattern</th><th>Time</th></tr></thead>
+    <tbody>
+    {% for r in pcfg %}
+      <tr><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>{{ r[2] }}</td><td>{{ r[3] }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
 
+<section>
+  <h3>John The Ripper Results (recent)</h3>
+  <table>
+    <thead><tr><th>User</th><th>Guesses</th><th>Cracked?</th><th>Cracked password</th><th>Audit time (ms)</th></tr></thead>
+    <tbody>
+    {% for r in jtr %}
+      <tr><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>{{ 'Yes' if r[2] else 'No' }}</td><td>{{ r[3] }}</td><td>{{ r[4] }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
 
-<script src="/static/js/charts.js"></script>
+<section>
+  <h3>Detection Alerts (recent)</h3>
+  <table>
+    <thead><tr><th>Type</th><th>Details</th><th>Time</th></tr></thead>
+    <tbody>
+    {% for a in alerts %}
+      <tr><td>{{ a[0] }}</td><td>{{ a[1] }}</td><td>{{ a[2] }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
 
-</body>
-</html>
+<section>
+  <h3>Recent Logs</h3>
+  <table>
+    <thead><tr><th>User</th><th>IP</th><th>Status</th><th>Time</th></tr></thead>
+    <tbody>
+    {% for l in logs %}
+      <tr><td>{{ l[0] }}</td><td>{{ l[1] }}</td><td>{{ l[2] }}</td><td>{{ l[3] }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% endblock %}

@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Wordlist Analysis</h2>
+
+<form method="post" enctype="multipart/form-data">
+  <label for="wordlist">Upload wordlist (one password per line):</label>
+  <input type="file" name="wordlist" id="wordlist" accept=".txt" required>
+  <button type="submit">Analyze</button>
+</form>
+
+{% if summary is not none %}
+  <h3>Summary ({{ total }} passwords)</h3>
+  <button onclick="downloadChart('summaryChart', 'bar-chart.png')">Download Bar Chart</button>
+  <canvas id="summaryChart" width="700" height="300"></canvas>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <script>
+    const labels = [{% for row in summary %}'{{ row.bucket }}%',{% endfor %}];
+    const data = {
+      labels: labels,
+      datasets: [{
+        label: 'Passwords per strength',
+        data: [{% for row in summary %}{{ row.count }},{% endfor %}],
+        backgroundColor: 'rgba(255, 0, 0, 0.6)',
+        borderColor: 'rgba(200, 0, 0, 1)',
+        borderWidth: 1
+      }]
+    };
+    const config = {type: 'bar', data: data, options: {scales: {y: {beginAtZero: true}}}};
+    const myChart = new Chart(
+      document.getElementById('summaryChart'),
+      config
+    );
+  </script>
+  <div style="max-width:700px;">
+    <table style="width:100%; border-collapse:collapse;">
+      <tr>
+        <th style="text-align:left; padding:6px">Bucket</th>
+        <th style="text-align:left; padding:6px">Count</th>
+        <th style="text-align:left; padding:6px">Percent</th>
+        <th style="text-align:left; padding:6px">Distribution</th>
+      </tr>
+      {% for row in summary %}
+      <tr>
+        <td style="padding:6px">{{ row.bucket }}%</td>
+        <td style="padding:6px">{{ row.count }}</td>
+        <td style="padding:6px">{{ row.pct }}%</td>
+        <td style="padding:6px;">
+          <div style="background:#eee; width:100%; height:18px;">
+            <div style="background:#4caf50; height:18px; width:{{ row.bar_width }}%;"></div>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <h4>Strength Distribution by Score (Pie Chart)</h4>
+  <button onclick="downloadChart('pieChart', 'score-pie-chart.png')">Download Pie Chart</button>
+  <div style="width:400px; height:400px;">
+    <canvas id="pieChart"></canvas>
+  </div>
+  <script>
+    const pieLabels = [{% for row in summary %}'{{ row.bucket }}%',{% endfor %}];
+    const pieData = {
+      labels: pieLabels,
+      datasets: [{
+        label: 'Passwords',
+        data: [{% for row in summary %}{{ row.count }},{% endfor %}],
+        backgroundColor: [
+          'rgba(255, 0, 0, 0.8)',
+          'rgba(0, 255, 0, 0.8)',
+          'rgba(0, 0, 255, 0.8)',
+          'rgba(255, 255, 0, 0.8)',
+          'rgba(255, 0, 255, 0.8)',
+          'rgba(0, 255, 255, 0.8)',
+          'rgba(255, 128, 0, 0.8)',
+          'rgba(128, 0, 255, 0.8)',
+          'rgba(0, 128, 255, 0.8)',
+          'rgba(255, 0, 128, 0.8)'
+        ]
+      }]
+    };
+    const pieConfig = {
+      type: 'pie', 
+      data: pieData, 
+      options: {
+        responsive: true, 
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {display: true, position: 'right'},
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let label = context.label || '';
+                let value = context.parsed || 0;
+                let total = context.dataset.data.reduce((a,b) => a+b, 0);
+                let pct = ((value / total) * 100).toFixed(1);
+                return label + ': ' + value + ' (' + pct + '%)';
+              }
+            }
+          },
+          datalabels: {
+            formatter: (value, ctx) => {
+              let total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+              let pct = ((value / total) * 100).toFixed(1);
+              // Only show label if slice is >= 5%
+              if (pct >= 5) {
+                return pct + '%';
+              }
+              return '';
+            },
+            color: '#000',
+            font: {weight: 'bold', size: 14}
+          }
+        }
+      },
+      plugins: [ChartDataLabels]
+    };
+    const pieChart = new Chart(
+      document.getElementById('pieChart'),
+      pieConfig
+    );
+  </script>
+
+  <h4>Strength Classification (Pie Chart)</h4>
+  <button onclick="downloadChart('categoryChart', 'category-pie-chart.png')">Download Category Chart</button>
+  <div style="width:400px; height:400px;">
+    <canvas id="categoryChart"></canvas>
+  </div>
+  <script>
+    const catLabels = [{% for row in category_summary %}'{{ row.label }}',{% endfor %}];
+    const catData = {
+      labels: catLabels,
+      datasets: [{
+        label: 'Passwords',
+        data: [{% for row in category_summary %}{{ row.count }},{% endfor %}],
+        backgroundColor: [
+          'rgba(220, 20, 60, 0.8)',
+          'rgba(255, 140, 0, 0.8)',
+          'rgba(255, 215, 0, 0.8)',
+          'rgba(50, 205, 50, 0.8)',
+          'rgba(0, 100, 0, 0.8)'
+        ]
+      }]
+    };
+    const catConfig = {
+      type: 'pie', 
+      data: catData, 
+      options: {
+        responsive: true, 
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {display: true, position: 'right'},
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let label = context.label || '';
+                let value = context.parsed || 0;
+                let total = context.dataset.data.reduce((a,b) => a+b, 0);
+                let pct = ((value / total) * 100).toFixed(1);
+                return label + ': ' + value + ' (' + pct + '%)';
+              }
+            }
+          },
+          datalabels: {
+            formatter: (value, ctx) => {
+              let total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+              let pct = ((value / total) * 100).toFixed(1);
+              // Only show label if slice is >= 5%
+              if (pct >= 5) {
+                return pct + '%';
+              }
+              return '';
+            },
+            color: '#000',
+            font: {weight: 'bold', size: 14}
+          }
+        }
+      },
+      plugins: [ChartDataLabels]
+    };
+    const categoryChart = new Chart(
+      document.getElementById('categoryChart'),
+      catConfig
+    );
+  </script>
+  
+  <script>
+    function downloadChart(chartId, filename) {
+      const canvas = document.getElementById(chartId);
+      const url = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = url;
+      link.click();
+    }
+  </script>
+{% endif %}
+
+{% endblock %}

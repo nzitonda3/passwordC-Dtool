@@ -1,21 +1,19 @@
 # utils.py
-import bcrypt
 import hashlib
 import os
 
-# pepper for fingerprinting - in lab an env var would be better
-PEPPER = os.environ.get("PWD_PEPPER", "super_secret_pepper_for_lab")
+PEPPER = os.environ.get("PWD_PEPPER", "lab_pepper_change_me")
 
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+def hash_password_sha512(plain):
+    h = hashlib.sha512()
+    h.update(plain.encode())
+    return h.hexdigest()
 
-def verify_password(password: str, hashed: str) -> bool:
-    try:
-        return bcrypt.checkpw(password.encode(), hashed.encode())
-    except Exception:
-        return False
+def verify_password_sha512(plain, hexdigest):
+    return hash_password_sha512(plain) == hexdigest
 
-def fingerprint_password(password: str) -> str:
+def fingerprint_password(plain):
+    # fingerprint for detection: SHA256(pepper + password)
     m = hashlib.sha256()
-    m.update((PEPPER + password).encode())
+    m.update((PEPPER + (plain or "")).encode())
     return m.hexdigest()

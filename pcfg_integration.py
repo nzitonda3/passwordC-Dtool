@@ -1,0 +1,304 @@
+# pcfg_integration.py
+"""
+Integration wrapper for PCFG_Cracker by Matt Weir
+
+Provides:
+1. Password generation using trained grammar
+2. Probability estimation for passwords
+3. Pattern analysis
+"""
+
+import os
+import sys
+import subprocess
+from pathlib import Path
+
+
+class PCFGIntegration:
+    """
+    Wrapper for PCFG_Cracker integration.
+    """
+    
+    def __init__(self, pcfg_dir='pcfg_cracker', grammar_name='Default'):
+        """
+        Initialize PCFG integration.
+        
+        Args:
+            pcfg_dir: Path to pcfg_cracker directory
+            grammar_name: Name of trained grammar to use
+        """
+        self.pcfg_dir = Path(pcfg_dir)
+        self.grammar_name = grammar_name
+        self.grammar_path = self.pcfg_dir / 'Rules' / grammar_name
+        
+        # Check if PCFG_Cracker exists
+        if not self.pcfg_dir.exists():
+            print(f"[!] PCFG_Cracker not found at {self.pcfg_dir}")
+            print("[!] Clone from: https://github.com/lakiw/pcfg_cracker.git")
+            self.available = False
+            return
+        
+        # Check if grammar exists
+        if not self.grammar_path.exists():
+            print(f"[!] Grammar '{grammar_name}' not found")
+            print(f"[!] Train a grammar first: python3 pcfg_trainer.py -t training.txt -r Rules/{grammar_name}")
+            self.available = False
+            return
+        
+        self.available = True
+        print(f"[+] PCFG_Cracker initialized with grammar: {grammar_name}")
+    
+    def generate_guesses(self, max_guesses=1000, output_file='pcfg_guesses.txt'):
+        """
+        Generate password guesses using trained PCFG grammar.
+        
+        Args:
+            max_guesses: Maximum number of passwords to generate
+            output_file: Where to save generated passwords
+        
+        Returns:
+            List of generated passwords
+        """
+        if not self.available:
+            return []
+        
+        try:
+            # Run PCFG guesser
+            cmd = [
+                'python3',
+                'pcfg_guesser.py',
+                
+            ]
+            
+            print(f"[*] Generating {max_guesses} password guesses...")
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd=self.pcfg_dir)
+            
+            if result.returncode != 0:
+                print(f"[!] PCFG guesser error: {result.stderr}")
+                return []
+            
+            # Read generated passwords
+            if os.path.exists(output_file):
+                with open(output_file, 'r', encoding='utf-8', errors='ignore') as f:
+                    passwords = [line.strip() for line in f if line.strip()]
+                
+                print(f"[+] Generated {len(passwords)} passwords")
+                return passwords
+            
+        except Exception as e:
+            print(f"[!] Error generating guesses: {e}")
+        
+        return []
+    
+    def analyze_password_structure(self, password):
+        """
+        Analyze password structure using PCFG patterns.
+        
+        Returns:
+            dict with structure analysis
+        """
+        if not password:
+            return {'pattern': 'empty', 'complexity': 0}
+        
+        # Basic structure analysis
+        structure = []
+        i = 0
+        
+        while i < len(password):
+            char = password[i]
+            
+            if char.isupper():
+                # Count consecutive uppercase
+                count = 1
+                while i + count < len(password) and password[i + count].isupper():
+                    count += 1
+                structure.append(f'U{count}')
+                i += count
+            
+            elif char.islower():
+                # Count consecutive lowercase
+                count = 1
+                while i + count < len(password) and password[i + count].islower():
+                    count += 1
+                structure.append(f'L{count}')
+                i += count
+            
+            elif char.isdigit():
+                # Count consecutive digits
+                count = 1
+                while i + count < len(password) and password[i + count].isdigit():
+                    count += 1
+                structure.append(f'D{count}')
+                i += count
+            
+            else:
+                # Special character
+                structure.append(f'S1')
+                i += 1
+        
+        pattern = ''.join(structure)
+        
+        # Calculate complexity score based on pattern diversity
+        unique_types = len(set([s[0] for s in structure]))
+        complexity = unique_types * len(structure)
+        
+        return {
+            'pattern': pattern,
+            'structure': structure,
+            'complexity': complexity,
+            'length': len(password)
+        }
+    
+    def estimate_pcfg_probability(self, password):
+        """
+        Estimate probability of password being generated by PCFG.
+        
+        This is a simplified estimation - real PCFG uses complex probabilities.
+        
+        Returns:
+            Probability score (0.0 to 1.0)
+        """
+        if not password:
+            return 0.0
+        
+        analysis = self.analyze_password_structure(password)
+        
+        # Common patterns have higher probability
+        common_patterns = {
+            'L8': 0.8,           # 8 lowercase (very common)
+            'L6D2': 0.7,         # 6 letters + 2 digits
+            'U1L7': 0.6,         # Capital + 7 lowercase
+            'L8D1': 0.5,         # 8 letters + 1 digit
+            'U1L5D2': 0.6,       # Capital + 5 letters + 2 digits
+        }
+        
+        pattern = analysis['pattern']
+        
+        # Check if exact pattern match
+        if pattern in common_patterns:
+            return common_patterns[pattern]
+        
+        # Partial matching
+        probability = 0.5  # Default
+        
+        # Lower probability for very short or very long
+        length = analysis['length']
+        if length < 6:
+            probability *= 0.3
+        elif length > 16:
+            probability *= 0.4
+        
+        # Higher probability for common structures
+        if 'L' in pattern and 'D' in pattern:
+            probability *= 1.2
+        
+        if 'U1L' in pattern:  # Starts with capital
+            probability *= 1.1
+        
+        # Lower probability for special characters
+        if 'S' in pattern:
+            probability *= 0.8
+        
+        return min(probability, 1.0)
+    
+    def get_training_stats(self):
+        """
+        Get statistics about trained grammar.
+        """
+        if not self.available:
+            return None
+        
+        stats = {
+            'grammar_name': self.grammar_name,
+            'grammar_path': str(self.grammar_path),
+            'available': True
+        }
+        
+        # Try to count rules
+        try:
+            rules_dir = self.grammar_path
+            if rules_dir.exists():
+                stats['num_files'] = len(list(rules_dir.glob('*')))
+        except Exception:
+            pass
+        
+        return stats
+
+
+# Global instance
+_pcfg = None
+
+def get_pcfg():
+    """Get or create global PCFG instance."""
+    global _pcfg
+    if _pcfg is None:
+        _pcfg = PCFGIntegration()
+    return _pcfg
+
+
+def generate_attack_passwords(count=100):
+    """
+    Generate passwords for attack simulation.
+    
+    Returns:
+        List of generated passwords
+    """
+    pcfg = get_pcfg()
+    if not pcfg.available:
+        # Fallback to common passwords
+        return [
+            'password', '123456', 'password123', 'qwerty', 'abc123',
+            'letmein', 'welcome', 'monkey', 'dragon', 'master'
+        ]
+    
+    return pcfg.generate_guesses(max_guesses=count)
+
+
+# For testing
+if __name__ == "__main__":
+    print("="*70)
+    print("PCFG_CRACKER INTEGRATION TEST")
+    print("="*70 + "\n")
+    
+    pcfg = PCFGIntegration()
+    
+    if not pcfg.available:
+        print("[!] PCFG_Cracker not available")
+        print("\nTo set up:")
+        print("1. git clone https://github.com/lakiw/pcfg_cracker.git")
+        print("2. cd pcfg_cracker")
+        print("3. python3 pcfg_trainer.py -t training.txt -r Rules/MyGrammar")
+    else:
+        print("[+] PCFG_Cracker is available!\n")
+        
+        # Test structure analysis
+        test_passwords = [
+            'password',
+            'Password1',
+            'MyP@ssw0rd',
+            'abc123',
+            'qwerty123'
+        ]
+        
+        print("Password Structure Analysis:")
+        print("-" * 70)
+        for pwd in test_passwords:
+            analysis = pcfg.analyze_password_structure(pwd)
+            prob = pcfg.estimate_pcfg_probability(pwd)
+            print(f"Password: {pwd:15s} | Pattern: {analysis['pattern']:10s} | Prob: {prob:.3f}")
+        
+        print("\n" + "="*70)
+        
+        # Test generation
+        print("\n[*] Testing password generation...")
+        passwords = pcfg.generate_guesses(max_guesses=20)
+        
+        if passwords:
+            print(f"[+] Generated {len(passwords)} passwords")
+            print("\nFirst 10 generated passwords:")
+            for i, pwd in enumerate(passwords[:10], 1):
+                print(f"  {i}. {pwd}")
+        
+        print("\n" + "="*70)
+        print("✅ PCFG Integration Test Complete!")
+        print("="*70)

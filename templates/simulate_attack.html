@@ -1,68 +1,32 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Simulate Attack</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+{% extends "base.html" %}
+{% block content %}
+<h2>Simulate Attack</h2>
 
-    <style>
-        textarea {
-            width: 90%;
-            height: 80px;
-            background: #000;
-            border: 1px solid #00ff88;
-            color: #00ff88;
-            margin-bottom: 10px;
-        }
-        select {
-            width: 90%;
-            padding: 10px;
-            background: #000;
-            color: #00ff88;
-            border: 1px solid #00ff88;
-            margin-bottom: 10px;
-        }
-    </style>
-</head>
+<form method="post" enctype="multipart/form-data">
+  <label>Attack Type</label>
+  <select name="attack_type">
+    <option value="bruteforce">Brute-force (many passwords -> single user)</option>
+    <option value="stuffing">Credential stuffing (one password -> many users)</option>
+    <option value="spray">Password spraying (one password across many users)</option>
+  </select>
 
-<body>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <div class="flash-messages">
-      {% for category, msg in messages %}
-        <div class="flash {{ category }}">{{ msg }}</div>
-      {% endfor %}
-    </div>
-  {% endif %}
-{% endwith %}
+  <label>Usernames (comma-separated)</label>
+  <input type="text" name="usernames" placeholder="alice,bob,john">
 
-<div class="container">
-    <h2>Attack Simulation</h2>
+  <label>Passwords (comma-separated)</label>
+  <input type="text" name="passwords" placeholder="Password123,123456">
 
-    <form method="post">
+  <label>Or upload a wordlist (one password per line)</label>
+  <input type="file" name="wordlist" accept=".txt">
 
-        <label>Attack Type:</label><br>
-        <select name="attack_type">
-            <option value="bruteforce">Brute Force</option>
-            <option value="stuffing">Credential Stuffing</option>
-            <option value="spray">Password Spraying</option>
-        </select><br>
+  <label>Source IP</label>
+  <input type="text" name="ip" placeholder="1.2.3.4">
 
-        <label>Usernames (comma separated):</label><br>
-        <textarea name="usernames" placeholder="alice,bob,carol"></textarea><br>
+  <label>Attempts per user</label>
+  <input type="number" name="count" value="3">
 
-        <label>Passwords (comma separated):</label><br>
-        <textarea name="passwords" placeholder="Password123,123456,admin"></textarea><br>
+  <button type="submit">Start Simulation</button>
+</form>
 
-        <label>Source IP:</label><br>
-        <input type="text" name="ip" placeholder="192.168.1.55"><br>
-
-        <label>Attempts per User:</label><br>
-        <input type="number" name="count" value="3"><br>
-
-        <button type="submit">Simulate Attack</button>
-    </form>
-
-    <a href="/admin">Back to Dashboard</a>
-</div>
-</body>
-</html>
+<p><a href="/admin">Back to Admin</a></p>
+{% endblock %}
